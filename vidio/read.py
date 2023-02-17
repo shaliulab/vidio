@@ -88,13 +88,17 @@ class OpenCVReader(BaseReader):
         super().__init__(filename, nframes, idx)
         self.fps = self.file_object.get(cv2.CAP_PROP_FPS)
         self.rois={}
+        self.roi=None
         if self.idx is not None:
             if os.path.exists(self._roi_file):
                 with open(self._roi_file, "r", encoding="utf8") as filehandle:
-                    data = filehandle.readline().strip("\n").split(" ")
-                    data = [int(e) for e in data]
-                    roi_id, x, y, w, h = data
-                    self.rois[roi_id] = (x, y, w, h)
+                    lines = filehandle.readlines().strip("\n").split("\n")
+                    for line in lines:
+                        data = line.split(" ")
+                        data = [int(e) for e in data]
+                        roi_id, x, y, w, h = data
+                        self.rois[roi_id] = (x, y, w, h)
+                    self.roi = self.rois[self.idx]
             else:
                 raise FileNotFoundError(f"{self._roi_file} not found")
 
@@ -109,8 +113,8 @@ class OpenCVReader(BaseReader):
     def process_frame(self, frame):
         # opencv reads into BGR colorspace by default
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        if self.idx:
-            x, y, w, h = self.rois[self.idx]
+        if self.roi is not None:
+            x, y, w, h = self.roi
             return frame[y:(y+h), x:(x+w)]
         return frame
 
@@ -280,7 +284,13 @@ def VideoReader(filename, assume_writer_style=False, filetype='.png', roi: int =
         if ext == 'h5' or ext == 'hdf5':
             return HDF5Reader(filename)
         elif ext == 'avi' or ext == 'mp4' or ext == 'mov':
-            return OpenCVReader(filename, roi=roi)
+            split=filename.split("__")
+            filename=split[0]
+            if len(split) == 1:
+                idx=None
+            else:
+                idx=int(split[1])
+            return OpenCVReader(filename, roi=roi, idx=idx)
         else:
             raise ValueError('unknown file extension: {}'.format(ext))
 
