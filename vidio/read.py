@@ -1,4 +1,4 @@
-import os
+import os.path
 from typing import Union
 
 import cv2
@@ -7,7 +7,7 @@ import numpy as np
 
 
 class BaseReader:
-    def __init__(self, filename: Union[str, bytes, os.PathLike], nframes) -> None:
+    def __init__(self, filename: Union[str, bytes, os.PathLike], nframes, idx: int = None) -> None:
         """Initializes a VideoReader object.
 
         Args:
@@ -17,6 +17,8 @@ class BaseReader:
         """
         self.fnum = 0
         self.nframes = nframes
+        self.idx=idx
+        self._roi_file = f"{os.path.splitext(filename)[0]}_rois.txt"
 
     # Python 2 compatibility:
     def next(self):
@@ -79,12 +81,23 @@ class BaseReader:
 
 
 class OpenCVReader(BaseReader):
-    def __init__(self, filename: Union[str, bytes, os.PathLike]):
+    def __init__(self, filename: Union[str, bytes, os.PathLike], idx: int = None):
         self.filename = filename
         self.file_object = cv2.VideoCapture(filename)
         nframes = int(self.file_object.get(cv2.CAP_PROP_FRAME_COUNT))
-        super().__init__(filename, nframes)
+        super().__init__(filename, nframes, idx)
         self.fps = self.file_object.get(cv2.CAP_PROP_FPS)
+        self.rois={}
+        if self.idx is not None:
+            if os.path.exists(self._roi_file):
+                with open(self._roi_file, "r", encoding="utf8") as filehandle:
+                    data = filehandle.readline().strip("\n").split(" ")
+                    data = [int(e) for e in data]
+                    roi_id, x, y, w, h = data
+                    self.rois[roi_id] = (x, y, w, h)
+            else:
+                raise FileNotFoundError(f"{self._roi_file} not found")
+
 
     def __next__(self):
         super().__next__()
@@ -96,6 +109,9 @@ class OpenCVReader(BaseReader):
     def process_frame(self, frame):
         # opencv reads into BGR colorspace by default
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        if self.idx:
+            x, y, w, h = self.rois[self.idx]
+            return frame[y:(y+h), x:(x+w)]
         return frame
 
     def read(self, framenum: int) -> np.ndarray:
@@ -224,8 +240,14 @@ class HDF5Reader(BaseReader):
             del self.file_object
 
 
-def VideoReader(filename, assume_writer_style=False, filetype='.png'):
+def VideoReader(filename, assume_writer_style=False, filetype='.png', roi: int = None):
     """Class for reading videos using OpenCV or JPGs encoded in an HDF5 file.
+
+    Args:
+
+        idx (int): If not None, identity of the ROI to be read within the video
+            The identity refers to a ROI specified in a file coexisting with the video
+            with name videoName_rois.txt
 
     Features:
         - can be used as an iterator, or with a decorator
@@ -258,7 +280,7 @@ def VideoReader(filename, assume_writer_style=False, filetype='.png'):
         if ext == 'h5' or ext == 'hdf5':
             return HDF5Reader(filename)
         elif ext == 'avi' or ext == 'mp4' or ext == 'mov':
-            return OpenCVReader(filename)
+            return OpenCVReader(filename, roi=roi)
         else:
             raise ValueError('unknown file extension: {}'.format(ext))
 
