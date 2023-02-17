@@ -18,7 +18,7 @@ class BaseReader:
         self.fnum = 0
         self.nframes = nframes
         self.idx=idx
-        self._roi_file = f"{os.path.splitext(filename)[0]}_rois.txt"
+        self._roi_file = os.path.join(os.path.dirname(filename), "rois.txt")
 
     # Python 2 compatibility:
     def next(self):
