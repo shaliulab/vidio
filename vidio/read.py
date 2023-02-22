@@ -89,6 +89,9 @@ class OpenCVReader(BaseReader):
         self.file_object = cv2.VideoCapture(filename)
         nframes = int(self.file_object.get(cv2.CAP_PROP_FRAME_COUNT))
         super().__init__(filename, nframes, idx)
+        if idx is None and os.path.exists(self._roi_file):
+            idx = int(os.path.splitext(filename)[0].split("_")[-1])
+            self.idx=idx
         self.fps = self.file_object.get(cv2.CAP_PROP_FPS)
         self.rois={}
         self.roi=None
@@ -123,7 +126,8 @@ class OpenCVReader(BaseReader):
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         if self.roi is not None:
             x, y, w, h = self.roi
-            return frame[y:(y+h), x:(x+w)]
+            frame=frame[y:(y+h), x:(x+w)]
+
         return frame
 
     def read(self, framenum: int) -> np.ndarray:
