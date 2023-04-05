@@ -108,7 +108,10 @@ class OpenCVReader(BaseReader):
                     data = [int(e) for e in data]
                     roi_id, x, y, w, h = data
                     self.rois[roi_id] = (x, y, w, h)
-                self.roi = self.rois[self.idx]
+                try:
+                    self.roi = self.rois[self.idx]
+                except KeyError:
+                    raise KeyError(f"ROI {self.idx} for {self.filename} not available")
         else:
             raise FileNotFoundError(f"{self._roi_file} not found")
 
