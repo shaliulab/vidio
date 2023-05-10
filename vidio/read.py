@@ -4,7 +4,8 @@ from typing import Union
 import cv2
 import h5py
 import numpy as np
-
+HJUST=50
+VJUST=50
 
 class BaseReader:
 
@@ -107,6 +108,10 @@ class OpenCVReader(BaseReader):
                     data = line.strip("\n").split(" ")
                     data = [int(e) for e in data]
                     roi_id, x, y, w, h = data
+                    x+=HJUST
+                    w-=HJUST*2
+                    y+=VJUST
+                    h-=VJUST*2
                     self.rois[roi_id] = (x, y, w, h)
                 try:
                     self.roi = self.rois[self.idx]
