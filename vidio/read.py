@@ -100,8 +100,11 @@ class OpenCVReader(BaseReader):
             self.load_roi()
 
 
-    def load_roi(self):
-        if os.path.exists(self._roi_file):
+    def load_roi(self, roi=None):
+        if roi is not None:
+            self.rois={0: roi}
+            self.roi=self.rois[0]
+        elif os.path.exists(self._roi_file):
             with open(self._roi_file, "r", encoding="utf8") as filehandle:
                 lines = filehandle.readlines()
                 for line in lines:
