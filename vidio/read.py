@@ -100,7 +100,7 @@ class OpenCVReader(BaseReader):
             self.load_roi()
 
 
-    def load_roi(self, rois, roi):
+    def load_roi(self, rois=None, roi=None):
         if roi is not None:
             self.rois=rois
             self.roi=self.rois[roi]
