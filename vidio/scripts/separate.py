@@ -23,6 +23,19 @@ def separate_deg_wrapper(video, dest):
 
     return separate(video, dest)
 
+def separate_sleap_wrapper(video, dest):
+
+    key, extension=os.path.splitext(os.path.basename(dest))
+    intermediate=os.path.join(
+        os.path.dirname(video),
+        key,
+        f"{key}{extension}",
+    )
+    os.makedirs(os.path.dirname(intermediate), exist_ok=True)
+    shutil.copy(video,intermediate)
+    separate(intermediate, dest)
+
+
 def separate(video, dest):
 
     video=VideoReader(filename=video)
