@@ -23,23 +23,35 @@ def separate_deg_wrapper(video, dest):
 
     return separate(video, dest)
 
-def separate_sleap_wrapper(video, dest):
+# def separate_sleap_wrapper(video, dest, **kwargs):
 
-    key, extension=os.path.splitext(os.path.basename(dest))
-    intermediate=os.path.join(
-        os.path.dirname(video),
-        key,
-        f"{key}{extension}",
-    )
-    os.makedirs(os.path.dirname(intermediate), exist_ok=True)
-    shutil.copy(video,intermediate)
-    separate(intermediate, dest)
+#     key, extension=os.path.splitext(os.path.basename(dest))
+#     intermediate=os.path.join(
+#         os.path.dirname(video),
+#         key,
+#         f"{key}{extension}",
+#     )
+#     os.makedirs(os.path.dirname(intermediate), exist_ok=True)
+#     shutil.copy(video,intermediate)
+#     separate(intermediate, dest, **kwargs)
 
+def separate_sleap_wrapper(video, dest, **kwargs):
 
-def separate(video, dest):
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    separate(video, dest, **kwargs)
+
+def separate(video, dest, **kwargs):
 
     video=VideoReader(filename=video)
-    
+    if kwargs:
+        video.load_roi(**kwargs)
+    else:
+        lid=int(os.path.splitext(dest)[0].split("_")[-1])
+
+        roi=lid
+        rois={lid: (50+(200*(lid-1)), 50, 100, 100)}
+        video.load_roi(roi=roi, rois=rois)
+
     fps=int(video.file_object.get(5))
     width=int(video.roi[2])
     height=int(video.roi[3])
